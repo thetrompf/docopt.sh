@@ -64,9 +64,14 @@ function run-test {
 }
 
 function run-tests {
-    for t in tests/*.docopt; do
-        run-test "$t"
-    done
+    if ! test -z "$1"; then
+        run-test "$1"
+    else
+        local t
+        for t in tests/*.docopt; do
+            run-test "$t"
+        done
+    fi
 }
 
-run-tests
+run-tests "$1"

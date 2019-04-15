@@ -1,12 +1,12 @@
 Usage:
-    program FILE
+    convert FILE...
 
 PROGRAMS TABLE
 
 +-----+-----+-----+-----+-----+-------+
 | PRG | POS | NEC | TYP | IDX | OCCUR |
 +-----+-----+-----+-----+-----+-------+
-|   0 |   0 | req | pos |   0 |  once |
+|   0 |   0 | req | pos |   0 |  cont |
 +-----+-----+-----+-----+-----+-------+
 
 POSITIONAL ARGUMENTS TABLE
@@ -14,5 +14,5 @@ POSITIONAL ARGUMENTS TABLE
 +-----+------+-----+-------+
 | IDX | NAME | TYP | OCCUR |
 +-----+------+-----+-------+
-|   0 | FILE | pos |  once |
+|   0 | FILE | pos |  cont |
 +-----+------+-----+-------+
