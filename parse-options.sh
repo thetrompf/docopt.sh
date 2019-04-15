@@ -188,6 +188,7 @@ function parse-options {
                             # [--option ]
                             long="$option"
                         fi
+                        # shellcheck disable=SC1007
                         option= # reset option variable
                     fi
 
@@ -224,6 +225,7 @@ function parse-options {
                             else
                                 long="$option"
                             fi
+                            # shellcheck disable=SC1007
                             option= # reset option variable
                         fi
                     fi
@@ -260,6 +262,7 @@ function parse-options {
                         else
                             long="$option"
                         fi
+                        # shellcheck disable=SC1007
                         option= # reset option variable
                     fi
 

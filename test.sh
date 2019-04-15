@@ -5,7 +5,8 @@ source ./parse-options.sh
 source ./parse-programs.sh
 
 function run-test {
-    local test_file snaphot_file snaphot USAGE test_result output1 output2 output3 output4 output5
+    local test_file snaphot_file snaphot USAGE test_result \
+          output1 output2 output3 output4 output5 output6 output7
     test_file=$1
 
     USAGE="$(cat "$test_file")"
@@ -34,15 +35,23 @@ function run-test {
     printf -v output2 'PROGRAMS TABLE\n\n'
     output3="$(print-programs-table valid_programs option_shorts option_longs option_arguments option_defaults)"
 
-    if test "${#option_longs}" -eq 0; then
+    if test "${#positional_arguments}" -eq 0; then
         output4=
         output5=
     else
-        printf -v output4 '\n\nOPTIONS TABLE\n\n'
-        output5="$(print-options-table option_shorts option_longs option_arguments option_defaults)"
+        printf -v output4 '\n\nPOSITIONAL ARGUMENTS TABLE\n\n'
+        output5="$(print-positional-arguments-table positional_arguments)"
     fi
-    printf -v test_result '--' '%s%s%s%s%s' "$output1" "$output2" "$output3" "$output4" "$output5"
 
+    if test "${#option_longs}" -eq 0; then
+        output6=
+        output7=
+    else
+        printf -v output6 '\n\nOPTIONS TABLE\n\n'
+        output7="$(print-options-table option_shorts option_longs option_arguments option_defaults)"
+    fi
+    printf -v test_result '--' '%s%s%s%s%s%s%s' "$output1" "$output2" "$output3" \
+                                                "$output4" "$output5" "$output6" "$output7"
 
     if [[ "$snaphot" != "$test_result" ]]; then
         printf ' failed!\n\nTest: %s did not match snapshot\n\n' "$test_file"

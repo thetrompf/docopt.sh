@@ -22,17 +22,23 @@ function print-programs-table {
           max_occurance=${#header_occurance} \
           line line1 line2 line3 line4 line5 line6
 
+    # shellcheck disable=SC2046 disable=SC1083
     printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_program + 1))});
+    # shellcheck disable=SC2046 disable=SC1083
     printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_position + 1))});
+    # shellcheck disable=SC2046 disable=SC1083
     printf -v line3 -- "%0.1s" $(eval echo "-"{0..$((max_necessity + 1))});
+    # shellcheck disable=SC2046 disable=SC1083
     printf -v line4 -- "%0.1s" $(eval echo "-"{0..$((max_type + 1))});
+    # shellcheck disable=SC2046 disable=SC1083
     printf -v line5 -- "%0.1s" $(eval echo "-"{0..$((max_index + 1))})
+    # shellcheck disable=SC2046 disable=SC1083
     printf -v line6 -- "%0.1s" $(eval echo "-"{0..$((max_occurance + 1))})
     printf -v line -- '+%s+%s+%s+%s+%s+%s+' "$line1" "$line2" "$line3" "$line4" "$line5" "$line6"
 
-    printf '%s\n' "$line"
+    printf -- '%s\n' "$line"
     printf -- "| % ${max_program}s | % ${max_position}s | % ${max_necessity}s | % ${max_type}s | % ${max_index}s | % ${max_occurance}s |\n" "$header_program" "$header_position" "$header_necessity" "$header_type" "$header_index" "$header_occurance"
-    printf '%s\n' "$line"
+    printf -- '%s\n' "$line"
 
     local -p i=0 j=-1 p=0 pi=0 programs_count=${#programs[@]}
     for (( i=0; i<programs_count; i++ )); do
@@ -47,9 +53,9 @@ function print-programs-table {
                     continue
                 fi
                 pi=$((pi + 1))
-                printf '\n%s\n' "$line"
+                printf -- '\n%s\n' "$line"
             elif ! test "$i" -eq 0; then
-                printf '\n'
+                printf -- '\n'
             fi
             printf -- "| % ${max_program}s " "$pi"
             printf -- "| % ${max_position}s " "$p"
@@ -96,6 +102,39 @@ function print-programs-table {
 
     done
     printf '\n%s' "$line"
+}
+
+function print-positional-arguments-table {
+    local -n positionals
+    positionals=$1
+
+    local header_index='IDX' \
+          header_name='NAME'
+
+    local max_index=${#header_index} \
+          max_name=${#header_name} \
+          line line1 line2
+
+    local e i=-1
+    for e in "${!positionals[@]}"; do if test "${#e}" -gt "$max_index"; then max_index="${#e}"; fi; done
+    for e in "${positionals[@]}"; do if test "${#e}" -gt "$max_name"; then max_name="${#e}"; fi; done
+
+    # shellcheck disable=SC2046 disable=SC1083
+    printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_index + 1))});
+    # shellcheck disable=SC2046 disable=SC1083
+    printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_name + 1))});
+    printf -v line -- '+%s+%s+' "$line1" "$line2"
+
+    printf -- '%s\n' "$line"
+    printf -- "| % ${max_index}s | % ${max_name}s |\n" "$header_index" "$header_name"
+    printf -- '%s\n' "$line"
+
+    for e in "${positionals[@]}"; do
+        i=$((i + 1))
+        printf -- "| % ${max_index}s | % ${max_name}s |\n" "$i" "$e"
+    done
+
+    printf '%s\n' "$line"
 }
 
 # PROGRAM ARG STRUCTURE [
@@ -205,6 +244,7 @@ function parse-programs {
                     fi
 
                     arguments[$io]="$arg"
+                    # shellcheck disable=SC1007
                     arg= # reset arg variable
                 fi
 
@@ -242,6 +282,7 @@ function parse-programs {
                         fi
                     fi
 
+                    # shellcheck disable=SC1007
                     option= # reset option variable
                     if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
                     programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
@@ -291,6 +332,7 @@ function parse-programs {
                     fi
 
                     arguments[$io]="$arg"
+                    # shellcheck disable=SC1007
                     arg= # reset arg variable
                 fi
 
@@ -328,6 +370,7 @@ function parse-programs {
                         fi
                     fi
 
+                    # shellcheck disable=SC1007
                     option= # reset option variable
                     if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
                     programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
@@ -407,6 +450,8 @@ function parse-programs {
                         fi
                         is_argument=true
                     fi
+
+                    # shellcheck disable=SC1007
                     option= # reset option variable
                     if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
                     programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
@@ -464,6 +509,8 @@ function parse-programs {
                     index_of "$option" longs io
                 fi
             fi
+
+            # shellcheck disable=SC1007
             option= # reset option variable
             if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
             programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
