@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # shellcheck disable=SC1091
 source ./parse-options.sh
@@ -31,11 +31,18 @@ function run-test {
     parse-programs "$USAGE" valid_programs positional_arguments option_shorts option_longs option_arguments option_defaults
 
     printf -v output1 '%s\n\n' "$USAGE"
-    printf -v output2 'PROGRAMS TABLE\n'
+    printf -v output2 'PROGRAMS TABLE\n\n'
     output3="$(print-programs-table valid_programs option_shorts option_longs option_arguments option_defaults)"
-    printf -v output4 '\n\nOPTIONS TABLE\n\n'
-    output5="$(print-options-table option_shorts option_longs option_arguments option_defaults)"
+
+    if test "${#option_longs}" -eq 0; then
+        output4=
+        output5=
+    else
+        printf -v output4 '\n\nOPTIONS TABLE\n\n'
+        output5="$(print-options-table option_shorts option_longs option_arguments option_defaults)"
+    fi
     printf -v test_result '--' '%s%s%s%s%s' "$output1" "$output2" "$output3" "$output4" "$output5"
+
 
     if [[ "$snaphot" != "$test_result" ]]; then
         printf ' failed!\n\nTest: %s did not match snapshot\n\n' "$test_file"

@@ -7,36 +7,41 @@ function print-options-table {
     local -n shorts longs arguments defaults
     shorts=$1 longs=$2 arguments=$3 defaults=$4
 
-    local SHORT_HEADER='SHORT' \
-          LONG_HEADER='LONG' \
-          ARGUMENT_HEADER='ARG' \
-          DEFAULT_HEADER='DEFAULT' \
+    local header_idx='IDX' \
+          header_short='SHORT' \
+          header_long='LONG' \
+          header_argument='ARG' \
+          header_default='DEFAULT'
 
-    local max_short=${#SHORT_HEADER} \
-          max_long=${#LONG_HEADER} \
-          max_argument=${#ARGUMENT_HEADER} \
-          max_default=${#DEFAULT_HEADER} \
-          line line1 line2 line3 line4
+    local max_idx=${#header_idx} \
+          max_short=${#header_short} \
+          max_long=${#header_long} \
+          max_argument=${#header_argument} \
+          max_default=${#header_default} \
+          line line1 line2 line3 line4 line5
 
     local e i
+    for e in "${!longs[@]}"; do if [[ "${#e}" -gt "$max_idx" ]]; then max_idx="${#e}"; fi; done
     for e in "${shorts[@]}"; do if [[ "${#e}" -gt "$max_short" ]]; then max_short="${#e}"; fi; done
     for e in "${longs[@]}"; do if [[ "${#e}" -gt "$max_long" ]]; then max_long="${#e}"; fi; done
     for e in "${arguments[@]}"; do if [[ "${#e}" -gt "$max_argument" ]]; then max_argument="${#e}"; fi; done
     for e in "${defaults[@]}"; do if [[ "${#e}" -gt "$max_default" ]]; then max_default="${#e}"; fi; done
 
-    printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_short + 1))});
-    printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_long + 1))});
-    printf -v line3 -- "%0.1s" $(eval echo "-"{0..$((max_argument + 1))});
-    printf -v line4 -- "%0.1s" $(eval echo "-"{0..$((max_default + 1))})
-    printf -v line -- '%s+%s+%s+%s' "$line1" "$line2" "$line3" "$line4"
+    printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_idx + 1))});
+    printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_short + 1))});
+    printf -v line3 -- "%0.1s" $(eval echo "-"{0..$((max_long + 1))});
+    printf -v line4 -- "%0.1s" $(eval echo "-"{0..$((max_argument + 1))});
+    printf -v line5 -- "%0.1s" $(eval echo "-"{0..$((max_default + 1))})
+    printf -v line -- '+%s+%s+%s+%s+%s+' "$line1" "$line2" "$line3" "$line4" "$line5"
 
     printf '%s\n' "$line"
-    printf -- " % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s \n" "$SHORT_HEADER" "$LONG_HEADER" "$ARGUMENT_HEADER" "$DEFAULT_HEADER"
+    printf -- "| % ${max_idx}s | % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s |\n" "$header_idx" "$header_short" "$header_long" "$header_argument" "$header_default"
     printf '%s\n' "$line"
 
     for i in "${!longs[@]}"; do
-        printf " % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s \n" "${shorts[i]}" "${longs[i]}" "${arguments[i]}" "${defaults[i]}"
+        printf "| % ${max_idx}s | % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s |\n" "$i" "${shorts[i]}" "${longs[i]}" "${arguments[i]}" "${defaults[i]}"
     done
+    printf '%s\n' "$line"
 }
 
 function parse-options {

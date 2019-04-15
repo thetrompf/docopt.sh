@@ -7,23 +7,95 @@ function print-programs-table {
     local -n programs
     programs=$1
 
-    local -p i=0 p=0
-    printf '[\n'
-    for p in "${programs[@]}"; do
-        if test $i -eq 0 || ! ((i % 5)); then
-            if ! test $i -eq 0; then
-                printf '),\n'
-            fi
-            printf '    (%d' "$p"
-            if [[ "$p" != 8 ]]; then
+    local header_program='PRG' \
+          header_position='POS' \
+          header_necessity='NEC' \
+          header_type='TYP' \
+          header_index='IDX' \
+          header_occurance='OCCUR'
+
+    local max_program=${#header_program} \
+          max_position=${#header_position} \
+          max_necessity=${#header_necessity} \
+          max_type=${#header_type} \
+          max_index=${#header_index} \
+          max_occurance=${#header_occurance} \
+          line line1 line2 line3 line4 line5 line6
+
+    printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_program + 1))});
+    printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_position + 1))});
+    printf -v line3 -- "%0.1s" $(eval echo "-"{0..$((max_necessity + 1))});
+    printf -v line4 -- "%0.1s" $(eval echo "-"{0..$((max_type + 1))});
+    printf -v line5 -- "%0.1s" $(eval echo "-"{0..$((max_index + 1))})
+    printf -v line6 -- "%0.1s" $(eval echo "-"{0..$((max_occurance + 1))})
+    printf -v line -- '+%s+%s+%s+%s+%s+%s+' "$line1" "$line2" "$line3" "$line4" "$line5" "$line6"
+
+    printf '%s\n' "$line"
+    printf -- "| % ${max_program}s | % ${max_position}s | % ${max_necessity}s | % ${max_type}s | % ${max_index}s | % ${max_occurance}s |\n" "$header_program" "$header_position" "$header_necessity" "$header_type" "$header_index" "$header_occurance"
+    printf '%s\n' "$line"
+
+    local -p i=0 j=-1 p=0 pi=0 programs_count=${#programs[@]}
+    for (( i=0; i<programs_count; i++ )); do
+        p="${programs[$i]}"
+        j=$((j + 1))
+        if test "$i" -eq 0 || ! ((j % 5)); then
+            j=0
+            if test "$p" -eq 8; then
                 i=$((i + 1))
+                p="${programs[$i]}"
+                if test -z "$p"; then
+                    continue
+                fi
+                pi=$((pi + 1))
+                printf '\n%s\n' "$line"
+            elif ! test "$i" -eq 0; then
+                printf '\n'
             fi
-            continue
+            printf -- "| % ${max_program}s " "$pi"
+            printf -- "| % ${max_position}s " "$p"
+            i=$((i + 1))
+            j=$((j + 1))
+            p="${programs[$i]}"
         fi
-        i=$((i + 1))
-        printf ',%d' "$p"
+        if ! test -z "$p" && ! ((j % 1)); then
+            case "$p" in
+                1) p="req";;
+                2) p="opt";;
+                *) printf 'Unknown necessity: %s %d %d\n' "$p" "$i" "$j" >&2; return 1;;
+            esac
+            printf -- "| % ${max_necessity}s " "$p"
+            i=$((i + 1))
+            j=$((j + 1))
+            p="${programs[$i]}"
+        fi
+        if ! test -z "$p" && ! ((j % 2)); then
+            case "$p" in
+                3) p="opt";;
+                4) p="pos";;
+                5) p="com";;
+                *) printf 'Unknown type: %s\n' "$p" >&2; return 1;;
+            esac
+            printf -- "| % ${max_type}s " "$p"
+            i=$((i + 1))
+            j=$((j + 1))
+            p="${programs[$i]}"
+        fi
+        if ! test -z "$p" && ! ((j % 3)); then
+            printf -- "| % ${max_index}s " "$p"
+            i=$((i + 1));j=$((j + 1))
+            p="${programs[$i]}"
+        fi
+        if ! test -z "$p" && ! ((j % 4)); then
+            case "$p" in
+                6) p="once";;
+                7) p="cont";;
+                *) printf 'Unknown occurance: %s\n' "$p" >&2; return 1;;
+            esac
+            printf -- "| % ${max_occurance}s |" "$p"
+        fi
+
     done
-    printf '),\n]\n'
+    printf '\n%s' "$line"
 }
 
 # PROGRAM ARG STRUCTURE [
