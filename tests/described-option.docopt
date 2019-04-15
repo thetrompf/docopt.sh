@@ -1,0 +1,5 @@
+Usage:
+    program --option
+
+Options:
+    --option  Nice description of the option.

@@ -1,32 +1,38 @@
 #!/bin/bash -e
 
+# shellcheck disable=SC1091
 source ./util.sh
 
 function print-programs-table {
     local -n programs
     programs=$1
 
-    local i=0 p
-    printf '[\n    ('
+    local -p i=0 p=0
+    printf '[\n'
     for p in "${programs[@]}"; do
-        i=$((i + 1))
-        if test "$p" -eq "8"; then
-            i=$((i - 1))
-            printf '%s)\n    (' "$p"
-        elif ! ((i % 5)); then
-            printf '%s),\n    (' "$p"
-        else
-            printf '%s,' "$p"
+        if test $i -eq 0 || ! ((i % 5)); then
+            if ! test $i -eq 0; then
+                printf '),\n'
+            fi
+            printf '    (%d' "$p"
+            if [[ "$p" != 8 ]]; then
+                i=$((i + 1))
+            fi
+            continue
         fi
+        i=$((i + 1))
+        printf ',%d' "$p"
     done
-    printf ')\n]\n'
+    printf '),\n]\n'
 }
 
 # PROGRAM ARG STRUCTURE [
 #    (position, necessity, type, index, occurances),
 #    (position, necessity, type, index, occurances),
 #    (position, necessity, type, index, occurances),
-#    EOP
+#    ...
+#    (EOP)
+#    (position, necessity, type, index, occurances),
 # ]
 
 # ARG TOKEN POSITION
@@ -58,14 +64,21 @@ function parse-programs {
           END_OF_PROGRAM=8
 
     local -n programs positionals shorts longs arguments defaults
-    programs=$1 positionals=$2 shorts=$3 longs=$4 arguments=$5 defaults=$6
 
-    local line char \
+    local USAGE line char \
           short long argument option positional arg program_name \
           is_option=false is_short=false is_argument=false \
           parse_program=false is_program_name=false \
           is_optional=false \
           i=-1 io=-1 pos=0 ARG_NECESSITY
+
+    USAGE=$1
+    programs=$2
+    positionals=$3
+    shorts=$4
+    longs=$5
+    arguments=$6
+    defaults=$7
 
     while IFS= read -r line; do
         if $parse_program || grep -qi 'usage' <<< "$line"; then
@@ -79,12 +92,13 @@ function parse-programs {
             break
         fi
 
+        # shellcheck disable=SC1007 disable=SC2034
         short= long= argument= option= positional= arg= program_name= \
         is_option=false is_short=false \
         is_argument=false is_program_name=false \
         i=-1 io=-1 pos=0
 
-        while IFS= read -n1 char; do
+        while IFS= read -r -n1 char; do
             i=$((i + 1))
             if test -z "$char"; then continue; fi
 
@@ -127,13 +141,13 @@ function parse-programs {
                     # [--option ]
                     if $is_short; then
                         # [-o ]
-                        io=$(index_of "$option" shorts)
+                        index_of "$option" shorts io
                         if test $io -eq -1; then
                             shorts+=( "$option" )
                             longs+=( "" )
                             arguments+=( "" )
                             defaults+=( "" )
-                            io=$(index_of "$option" shorts)
+                            index_of "$option" shorts io
                         else
                             if ! test -z "${arguments[$i]}"; then
                                 is_argument=true
@@ -142,13 +156,13 @@ function parse-programs {
 
                     else
                         # [--option ]
-                        io=$(index_of "$option" longs)
+                        index_of "$option" longs io
                         if test $io -eq -1; then
-                            shorts=( "" )
+                            shorts+=( "" )
                             longs+=( "$option" )
                             arguments+=( "" )
                             defaults+=( "" )
-                            io=$(index_of "$option" longs)
+                            index_of "$option" longs io
                         else
                             if ! test -z "${arguments[$i]}"; then
                                 is_argument=true
@@ -164,7 +178,7 @@ function parse-programs {
 
                 if ! test -z "$positional"; then
                     positionals+=( "$positional" )
-                    io=$(index_of "$positional" positionals)
+                    index_of "$positional" positionals io
                     positional=
                     if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
                     programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_POSITIONAL" "$io" "$ARG_OCCURANCE_ONCE" )
@@ -213,13 +227,13 @@ function parse-programs {
                     # [--option ]
                     if $is_short; then
                         # [-o ]
-                        io=$(index_of "$option" shorts)
+                        index_of "$option" shorts io
                         if test $io -eq -1; then
                             shorts+=( "$option" )
                             longs+=( "" )
                             arguments+=( "" )
                             defaults+=( "" )
-                            io=$(index_of "$option" shorts)
+                            index_of "$option" shorts io
                         else
                             if ! test -z "${arguments[$i]}"; then
                                 is_argument=true
@@ -228,13 +242,13 @@ function parse-programs {
 
                     else
                         # [--option ]
-                        io=$(index_of "$option" longs)
+                        index_of "$option" longs io
                         if test $io -eq -1; then
-                            shorts=( "" )
+                            shorts+=( "" )
                             longs+=( "$option" )
                             arguments+=( "" )
                             defaults+=( "" )
-                            io=$(index_of "$option" longs)
+                            index_of "$option" longs io
                         else
                             if ! test -z "${arguments[$i]}"; then
                                 is_argument=true
@@ -250,7 +264,7 @@ function parse-programs {
 
                 if ! test -z "$positional"; then
                     positionals+=( "$positional" )
-                    io=$(index_of "$positional" positionals)
+                    index_of "$positional" positionals io
                     positional=
                     if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
                     programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_POSITIONAL" "$io" "$ARG_OCCURANCE_ONCE" )
@@ -301,23 +315,23 @@ function parse-programs {
                     # [-o=]
                     # [--option=]
                     if $is_short; then
-                        io=$(index_of "$option" shorts)
+                        index_of "$option" shorts io
                         if test $io -eq -1; then
                             shorts+=( "$option" )
                             longs+=( "" )
                             arguments+=( "" )
                             defaults+=( "" )
-                            io=$(index_of "$option" shorts)
+                            index_of "$option" shorts io
                         fi
                         is_argument=true
                     else
-                        io=$(index_of "$option" longs)
+                        index_of "$option" longs io
                         if test $io -eq -1; then
                             shorts+=( "" )
                             longs+=( "$option" )
                             arguments+=( "" )
                             defaults+=( "" )
-                            io=$(index_of "$option" longs)
+                            index_of "$option" longs io
                         fi
                         is_argument=true
                     fi
@@ -360,22 +374,22 @@ function parse-programs {
             # [-o=]
             # [--option=]
             if $is_short; then
-                io=$(index_of "$option" shorts)
+                index_of "$option" shorts io
                 if test $io -eq -1; then
                     shorts+=( "$option" )
                     longs+=( "" )
                     arguments+=( "" )
                     defaults+=( "" )
-                    io=$(index_of "$option" shorts)
+                    index_of "$option" shorts io
                 fi
             else
-                io=$(index_of "$option" longs)
+                index_of "$option" longs io
                 if test $io -eq -1; then
                     shorts+=( "" )
                     longs+=( "$option" )
                     arguments+=( "" )
                     defaults+=( "" )
-                    io=$(index_of "$option" longs)
+                    index_of "$option" longs io
                 fi
             fi
             option= # reset option variable
@@ -395,7 +409,7 @@ function parse-programs {
 
         if ! test -z "$positional"; then
             positionals+=( "$positional" )
-            io=$(index_of "$positional" positionals)
+            index_of "$positional" positionals io
             positional=
             if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
             programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_POSITIONAL" "$io" "$ARG_OCCURANCE_ONCE" )

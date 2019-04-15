@@ -1,0 +1,15 @@
+Usage:
+    program --input=FILE
+
+PROGRAMS TABLE
+[
+    (0,1,3,0,6),
+    (8),
+]
+
+OPTIONS TABLE
+
+-------+-------+------+---------
+ SHORT |  LONG |  ARG | DEFAULT 
+-------+-------+------+---------
+       | input | FILE |         

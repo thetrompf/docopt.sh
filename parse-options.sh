@@ -1,5 +1,6 @@
 #!/bin/bash -e
 
+# shellcheck disable=SC1091
 source ./util.sh
 
 function print-options-table {
@@ -30,11 +31,11 @@ function print-options-table {
     printf -v line -- '%s+%s+%s+%s' "$line1" "$line2" "$line3" "$line4"
 
     printf '%s\n' "$line"
-    printf -- " % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s\n" "$SHORT_HEADER" "$LONG_HEADER" "$ARGUMENT_HEADER" "$DEFAULT_HEADER"
+    printf -- " % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s \n" "$SHORT_HEADER" "$LONG_HEADER" "$ARGUMENT_HEADER" "$DEFAULT_HEADER"
     printf '%s\n' "$line"
 
     for i in "${!longs[@]}"; do
-        printf " % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s\n" "${shorts[i]}" "${longs[i]}" "${arguments[i]}" "${defaults[i]}"
+        printf " % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s \n" "${shorts[i]}" "${longs[i]}" "${arguments[i]}" "${defaults[i]}"
     done
 }
 
@@ -44,17 +45,18 @@ function parse-options {
     # $option   the current option e.g. [-o, --option] name that is beign built.
     # $argument the current argument
 
-    local line char \
+    local USAGE line char \
           short long argument default arg def option \
           is_option=false is_short=false \
           is_single_space=false is_argument=false \
           is_description=false is_default=false \
           i=-1
 
-    shorts=$1
-    longs=$2
-    arguments=$3
-    defaults=$4
+    USAGE=$1
+    shorts=$2
+    longs=$3
+    arguments=$4
+    defaults=$5
 
     while IFS= read -r line; do
         if test -z "$line"; then continue; fi

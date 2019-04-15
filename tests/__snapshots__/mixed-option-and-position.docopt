@@ -1,0 +1,16 @@
+Usage:
+    program [--input=FILE] OUTPUT_DIR
+
+PROGRAMS TABLE
+[
+    (0,2,3,0,6),
+    (1,1,4,0,6),
+    (8),
+]
+
+OPTIONS TABLE
+
+-------+-------+------+---------
+ SHORT |  LONG |  ARG | DEFAULT 
+-------+-------+------+---------
+       | input | FILE |         

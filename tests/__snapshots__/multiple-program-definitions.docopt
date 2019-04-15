@@ -1,0 +1,19 @@
+Usage:
+    program --one-way
+    program --other-way
+
+PROGRAMS TABLE
+[
+    (0,1,3,0,6),
+    (8),
+    (0,1,3,1,6),
+    (8),
+]
+
+OPTIONS TABLE
+
+-------+-----------+-----+---------
+ SHORT |      LONG | ARG | DEFAULT 
+-------+-----------+-----+---------
+       |   one-way |     |         
+       | other-way |     |         

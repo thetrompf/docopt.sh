@@ -1,0 +1,7 @@
+{
+    "[plaintext]": {
+        "files.trimTrailingWhitespace": false,
+        "files.insertFinalNewline": false,
+        "files.trimFinalNewlines": false
+    }
+}

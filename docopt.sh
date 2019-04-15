@@ -27,7 +27,9 @@ function usage {
     exit "$status"
 }
 
+# shellcheck disable=SC1091
 source ./parse-programs.sh
+# shellcheck disable=SC1091
 source ./parse-options.sh
 
 # shellcheck disable=SC2034
@@ -43,8 +45,8 @@ option_arguments=()
 # shellcheck disable=SC2034
 option_defaults=()
 
-parse-options option_shorts option_longs option_arguments option_defaults
-parse-programs valid_programs positional_arguments option_shorts option_longs option_arguments option_defaults
+parse-options "$USAGE" option_shorts option_longs option_arguments option_defaults
+parse-programs "$USAGE" valid_programs positional_arguments option_shorts option_longs option_arguments option_defaults
 
 printf '\n%s\n\n\nPROGRAMS TABLE\n' "$USAGE"
 print-programs-table valid_programs option_shorts option_longs option_arguments option_defaults

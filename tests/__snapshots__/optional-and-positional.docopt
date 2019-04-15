@@ -1,0 +1,14 @@
+Usage:
+    program [OUTPUT_DIR]
+
+PROGRAMS TABLE
+[
+    (0,2,4,0,6),
+    (8),
+]
+
+OPTIONS TABLE
+
+-------+------+-----+---------
+ SHORT | LONG | ARG | DEFAULT 
+-------+------+-----+---------

@@ -1,0 +1,5 @@
+Usage:
+    program [--input=FILE]
+
+Options:
+    -i FILE --input=FILE  The input file. [default: -]

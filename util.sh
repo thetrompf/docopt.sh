@@ -3,20 +3,22 @@
 function index_of {
     local needle key
     local -p i=-1
-    local -n haystack
+    local -n haystack ret
 
     needle=$1
     haystack=$2
+    ret=$3
 
     for key in "${haystack[@]}"; do
         i=$((i + 1))
         if [[ "$key" == "$needle" ]]; then
-            printf '%d' "$i"
+            ret=$i
             return 0
         fi
     done
 
-    printf '%d' '-1'
+    # shellcheck disable=SC2034
+    ret=-1
     return 0
 }
 
