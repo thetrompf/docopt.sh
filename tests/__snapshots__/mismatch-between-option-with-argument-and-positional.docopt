@@ -1,0 +1,7 @@
+Usage:
+    program -i DIR
+
+Options:
+    -i FILE  Input file.
+
+Argument: DIR should match FILE in option  i

@@ -1,0 +1,30 @@
+Usage:
+    program <file>
+    program <file> <file>
+    program FILE
+    program FILE FILE
+
+PROGRAMS TABLE
+
++-----+-----+-----+-----+-----+-------+
+| PRG | POS | NEC | TYP | IDX | OCCUR |
++-----+-----+-----+-----+-----+-------+
+|   0 |   0 | req | pos |   0 |  once |
++-----+-----+-----+-----+-----+-------+
+|   1 |   0 | req | pos |   0 |  once |
+|   1 |   1 | req | pos |   0 |  once |
++-----+-----+-----+-----+-----+-------+
+|   2 |   0 | req | pos |   1 |  once |
++-----+-----+-----+-----+-----+-------+
+|   3 |   0 | req | pos |   1 |  once |
+|   3 |   1 | req | pos |   1 |  once |
++-----+-----+-----+-----+-----+-------+
+
+POSITIONAL ARGUMENTS TABLE
+
++-----+--------+-----+-------+
+| IDX |   NAME | TYP | OCCUR |
++-----+--------+-----+-------+
+|   0 | <file> | pos |  cont |
+|   1 |   FILE | pos |  cont |
++-----+--------+-----+-------+
