@@ -54,9 +54,10 @@ function run-test {
                                                 "$output4" "$output5" "$output6" "$output7"
 
     if [[ "$snaphot" != "$test_result" ]]; then
-        printf ' failed!\n\nTest: %s did not match snapshot\n\n' "$test_file"
-        printf 'Expected:\n%s\n\n' "$snaphot"
-        printf 'Got:\n%s\n' "$test_result"
+        printf ' failed!\n\nTest: %s did not match snapshot\n\n' "$test_file" >&2
+        diff -Naur <(printf '%s' "$snaphot") <(printf '%s' "$test_result") >&2
+        # printf 'Expected:\n%s\n\n' "$snaphot"
+        # printf 'Got:\n%s\n' "$test_result"
         exit 1
     else
         printf ' pass.\n'

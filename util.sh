@@ -65,3 +65,56 @@ function debug_line_printf {
         DEBUG=$old
     fi
 }
+
+function print_table_header {
+    local work line header column width i
+    local -n _column_spec
+
+    _column_spec=$1
+    for ((i = 0; i < ${#_column_spec[@]}; i += 2 )); do
+        column="${_column_spec[i]}"
+        width="${_column_spec[i+1]}"
+        # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
+        printf -v work -- '%0.1s' $(eval echo "-"{0..$((width + 1))});
+        line+="+$work"
+        # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
+        printf -v work -- "| % ${width}s " "$column"
+        header+="$work"
+    done
+
+    printf -- '%s+\n' "$line"
+    printf -- '%s|\n' "$header"
+    printf -- '%s+\n' "$line"
+}
+
+function print_table_row {
+    local work row column width i
+    local -n _column_spec
+
+    _column_spec=$1
+    for (( i = 0; i < ${#_column_spec[@]}; i += 2 )); do
+        column="${_column_spec[i]}"
+        width="${_column_spec[i+1]}"
+        # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
+        printf -v work -- "| % ${width}s " "$column"
+        row+="$work"
+    done
+
+    printf -- '%s|\n' "$row"
+}
+
+function print_table_hr {
+    local work line width i
+    local -n _column_spec
+
+    _column_spec=$1
+    for ((i = 0; i < ${#_column_spec[@]}; i += 2 )); do
+        width="${_column_spec[i+1]}"
+        # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
+        printf -v work -- '%0.1s' $(eval echo "-"{0..$((width + 1))});
+        line+="+$work"
+    done
+
+    printf -- '%s+\n' "$line"
+}
+
