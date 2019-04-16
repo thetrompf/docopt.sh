@@ -27,11 +27,11 @@ function print-options-table {
     for e in "${defaults[@]}"; do if [[ "${#e}" -gt "$width_default" ]]; then width_default="${#e}"; fi; done
 
     local -a column_spec=( \
-        "$header_idx" "$width_idx" \
-        "$header_short" "$width_short" \
-        "$header_long" "$width_long" \
+        "$header_idx"      "$width_idx" \
+        "$header_short"    "$width_short" \
+        "$header_long"     "$width_long" \
         "$header_argument" "$width_argument" \
-        "$header_default" "$width_default"
+        "$header_default"  "$width_default"
     )
 
     print_table_header column_spec
@@ -46,7 +46,7 @@ function print-options-table {
         print_table_row column_spec
     done
 
-    print_table_line column_spec
+    print_table_hr column_spec
 }
 
 function parse-options {
