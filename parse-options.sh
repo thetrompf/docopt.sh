@@ -13,35 +13,40 @@ function print-options-table {
           header_argument='ARG' \
           header_default='DEFAULT'
 
-    local max_idx=${#header_idx} \
-          max_short=${#header_short} \
-          max_long=${#header_long} \
-          max_argument=${#header_argument} \
-          max_default=${#header_default} \
-          line line1 line2 line3 line4 line5
+    local width_idx=${#header_idx} \
+          width_short=${#header_short} \
+          width_long=${#header_long} \
+          width_argument=${#header_argument} \
+          width_default=${#header_default}
 
     local e i
-    for e in "${!longs[@]}"; do if [[ "${#e}" -gt "$max_idx" ]]; then max_idx="${#e}"; fi; done
-    for e in "${shorts[@]}"; do if [[ "${#e}" -gt "$max_short" ]]; then max_short="${#e}"; fi; done
-    for e in "${longs[@]}"; do if [[ "${#e}" -gt "$max_long" ]]; then max_long="${#e}"; fi; done
-    for e in "${arguments[@]}"; do if [[ "${#e}" -gt "$max_argument" ]]; then max_argument="${#e}"; fi; done
-    for e in "${defaults[@]}"; do if [[ "${#e}" -gt "$max_default" ]]; then max_default="${#e}"; fi; done
+    for e in "${!longs[@]}"; do if [[ "${#e}" -gt "$width_idx" ]]; then width_idx="${#e}"; fi; done
+    for e in "${shorts[@]}"; do if [[ "${#e}" -gt "$width_short" ]]; then width_short="${#e}"; fi; done
+    for e in "${longs[@]}"; do if [[ "${#e}" -gt "$width_long" ]]; then width_long="${#e}"; fi; done
+    for e in "${arguments[@]}"; do if [[ "${#e}" -gt "$width_argument" ]]; then width_argument="${#e}"; fi; done
+    for e in "${defaults[@]}"; do if [[ "${#e}" -gt "$width_default" ]]; then width_default="${#e}"; fi; done
 
-    printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_idx + 1))});
-    printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_short + 1))});
-    printf -v line3 -- "%0.1s" $(eval echo "-"{0..$((max_long + 1))});
-    printf -v line4 -- "%0.1s" $(eval echo "-"{0..$((max_argument + 1))});
-    printf -v line5 -- "%0.1s" $(eval echo "-"{0..$((max_default + 1))})
-    printf -v line -- '+%s+%s+%s+%s+%s+' "$line1" "$line2" "$line3" "$line4" "$line5"
+    local -a column_spec=( \
+        "$header_idx" "$width_idx" \
+        "$header_short" "$width_short" \
+        "$header_long" "$width_long" \
+        "$header_argument" "$width_argument" \
+        "$header_default" "$width_default"
+    )
 
-    printf '%s\n' "$line"
-    printf -- "| % ${max_idx}s | % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s |\n" "$header_idx" "$header_short" "$header_long" "$header_argument" "$header_default"
-    printf '%s\n' "$line"
+    print_table_header column_spec
 
     for i in "${!longs[@]}"; do
-        printf "| % ${max_idx}s | % ${max_short}s | % ${max_long}s | % ${max_argument}s | % ${max_default}s |\n" "$i" "${shorts[i]}" "${longs[i]}" "${arguments[i]}" "${defaults[i]}"
+        column_spec[0]="$i"
+        column_spec[2]="${shorts[i]}"
+        column_spec[4]="${longs[i]}"
+        column_spec[6]="${arguments[i]}"
+        # shellcheck disable=SC2034
+        column_spec[8]="${defaults[i]}"
+        print_table_row column_spec
     done
-    printf '%s\n' "$line"
+
+    print_table_line column_spec
 }
 
 function parse-options {

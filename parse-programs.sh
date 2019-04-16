@@ -3,9 +3,36 @@
 # shellcheck disable=SC1091
 source ./util.sh
 
+# PROGRAM ARG STRUCTURE [
+#    (position, necessity, type, index, occurances),
+#    (position, necessity, type, index, occurances),
+#    (position, necessity, type, index, occurances),
+#    ...
+#    (EOP)
+#    (position, necessity, type, index, occurances),
+# ]
+#
+# ARG POSITION
+# position    *
+#
+# ARG NECESSITY
+# required    1
+# optional    2
+#
+# ARG TYPE
+# option      3 [index in options]
+# positional  4 [index in positionals]
+# command     5 [index in positionals]
+#
+# ARG OCCURANCES
+# once        6
+# continous   7
+#
+# EOP         EOP
+
 function print-programs-table {
     local -n programs
-    programs=$1
+             programs=$1
 
     local header_program='PRG' \
           header_position='POS' \
@@ -22,17 +49,17 @@ function print-programs-table {
           max_occurance=${#header_occurance} \
           line line1 line2 line3 line4 line5 line6
 
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_program + 1))});
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_position + 1))});
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line3 -- "%0.1s" $(eval echo "-"{0..$((max_necessity + 1))});
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line4 -- "%0.1s" $(eval echo "-"{0..$((max_type + 1))});
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line5 -- "%0.1s" $(eval echo "-"{0..$((max_index + 1))})
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line6 -- "%0.1s" $(eval echo "-"{0..$((max_occurance + 1))})
     printf -v line -- '+%s+%s+%s+%s+%s+%s+' "$line1" "$line2" "$line3" "$line4" "$line5" "$line6"
 
@@ -40,13 +67,14 @@ function print-programs-table {
     printf -- "| % ${max_program}s | % ${max_position}s | % ${max_necessity}s | % ${max_type}s | % ${max_index}s | % ${max_occurance}s |\n" "$header_program" "$header_position" "$header_necessity" "$header_type" "$header_index" "$header_occurance"
     printf -- '%s\n' "$line"
 
-    local -p i=0 j=-1 p=0 pi=0 programs_count=${#programs[@]}
+    local -p i=0 j=-1 pi=0 programs_count=0 p
+    programs_count=${#programs[@]}
     for (( i=0; i<programs_count; i++ )); do
         p="${programs[$i]}"
         j=$((j + 1))
         if test "$i" -eq 0 || ! ((j % 5)); then
             j=0
-            if test "$p" -eq 8; then
+            if [[ "$p" == "EOP" ]]; then
                 i=$((i + 1))
                 p="${programs[$i]}"
                 if test -z "$p"; then
@@ -123,13 +151,13 @@ function print-positional-arguments-table {
     for e in "${!positionals[@]}"; do if test "${#e}" -gt "$max_index"; then max_index="${#e}"; fi; done
     for e in "${positionals[@]}"; do if test "${#e}" -gt "$max_name"; then max_name="${#e}"; fi; done
 
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line1 -- "%0.1s" $(eval echo "-"{0..$((max_index + 1))});
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line2 -- "%0.1s" $(eval echo "-"{0..$((max_name + 1))});
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line3 -- "%0.1s" $(eval echo "-"{0..$((max_type + 1))});
-    # shellcheck disable=SC2046 disable=SC1083
+    # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
     printf -v line4 -- "%0.1s" $(eval echo "-"{0..$((max_occurance + 1))});
     printf -v line -- '+%s+%s+%s+%s+' "$line1" "$line2" "$line3" "$line4"
 
@@ -166,52 +194,30 @@ function print-positional-arguments-table {
     printf '%s\n' "$line"
 }
 
-# PROGRAM ARG STRUCTURE [
-#    (position, necessity, type, index, occurances),
-#    (position, necessity, type, index, occurances),
-#    (position, necessity, type, index, occurances),
-#    ...
-#    (EOP)
-#    (position, necessity, type, index, occurances),
-# ]
-
-# ARG TOKEN POSITION
-# position    *
-#
-# ARG NECESSITY
-# required    1
-# optional    2
-#
-# ARG TYPE
-# option      3 [index]
-# positional  4 [index]
-# command     5 [index]
-#
-# ARG OCCURANCES
-# once        6
-# continous   7
-#
-# EOP         8
-
 function parse-programs {
-    local ARG_NECESSITY_REQUIRED=1 \
-          ARG_NECESSITY_OPTIONAL=2 \
-          ARG_TYPE_OPTION=3 \
-          ARG_TYPE_POSITIONAL=4 \
-          ARG_TYPE_COMMAND=5 \
-          ARG_OCCURANCE_ONCE=6 \
-          ARG_OCCURANCE_CONTINOUS=7 \
-          END_OF_PROGRAM=8
+    local    ARG_NECESSITY_REQUIRED=1 \
+             ARG_NECESSITY_OPTIONAL=2 \
+             ARG_TYPE_OPTION=3 \
+             ARG_TYPE_POSITIONAL=4 \
+             ARG_TYPE_COMMAND=5 \
+             ARG_OCCURANCE_ONCE=6 \
+             ARG_OCCURANCE_CONTINOUS=7 \
+             END_OF_PROGRAM="EOP"
 
-    local -n programs positionals shorts longs arguments defaults
+    local -n programs \
+             positionals \
+             shorts \
+             longs \
+             arguments \
+             defaults
 
-    local USAGE line char \
-          short long argument option positional arg dots program_name \
-          is_option=false is_short=false is_argument=false \
-          parse_program=false is_program_name=false \
-          is_optional=false is_continous=false \
-          i=-1 io=-1 pos=0 cond_pos=0 \
-          ARG_NECESSITY ARG_TYPE ARG_OCCURANCE
+    local    USAGE line char \
+             short long argument option positional arg ellipsis program_name \
+             is_option=false is_short=false is_argument=false \
+             parse_program=false is_program_name=false \
+             is_optional=false is_continous=false \
+             i=-1 io=-1 pos=0 cond_pos=0 \
+             ARG_NECESSITY ARG_TYPE ARG_OCCURANCE
 
     USAGE=$1
     programs=$2
@@ -234,7 +240,7 @@ function parse-programs {
         fi
 
         # shellcheck disable=SC1007 disable=SC2034
-        short= long= argument= option= positional= arg= dots= program_name= \
+        short= long= argument= option= positional= arg= ellipsis= program_name= \
         is_option=false is_short=false is_continous=false \
         is_argument=false is_program_name=false \
         i=-1 io=-1 pos=0 cond_pos=0
@@ -243,20 +249,20 @@ function parse-programs {
             i=$((i + 1))
             if test -z "$char"; then continue; fi
 
-            debug_line_printf "$line" 'io = %s\n' "$io"
-            debug_line_printf "$line" 'arg = %s\n' "$arg"
-            debug_line_printf "$line" 'dots = %s\n' "$dots"
-            debug_line_printf "$line" 'option = %s\n' "$option"
-            debug_line_printf "$line" 'is_argument = %s\n' "$is_argument"
+            debug_line_printf "$line" 'io           = %s\n' "$io"
+            debug_line_printf "$line" 'arg          = %s\n' "$arg"
+            debug_line_printf "$line" 'ellipsis     = %s\n' "$ellipsis"
+            debug_line_printf "$line" 'option       = %s\n' "$option"
+            debug_line_printf "$line" 'is_argument  = %s\n' "$is_argument"
             debug_line_printf "$line" 'is_continous = %s\n' "$is_continous"
-            debug_line_printf "$line" 'is_option = %s\n' "$is_option"
+            debug_line_printf "$line" 'is_option    = %s\n' "$is_option"
             debug_line_printf "$line" '\n'
             debug_line_single "$line" "$i"
 
             if [[ "$char" == "." ]]; then
-                dots+="$char"
-                if  [[ "$dots" == '...' ]]; then
-                    dots=
+                ellipsis+="$char"
+                if  [[ "$ellipsis" == '...' ]]; then
+                    ellipsis=
                     is_continous=true
                 fi
                 continue
@@ -422,7 +428,7 @@ function parse-programs {
 
                 if ! test -z "$positional"; then
                     if [[ "$positional" =~ [a-z] ]]; then ARG_TYPE="$ARG_TYPE_COMMAND"; else ARG_TYPE="$ARG_TYPE_POSITIONAL"; fi
-                    if $is_continous || test "$dots" -eq '...'; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
+                    if $is_continous || test "$ellipsis" -eq '...'; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
                     positionals+=( "$positional" "$ARG_TYPE" "$ARG_OCCURANCE" )
                     index_of "$positional" positionals io
                     positional=
@@ -573,7 +579,7 @@ function parse-programs {
 
         if ! test -z "$positional"; then
             if [[ "$positional" =~ [a-z] ]]; then ARG_TYPE="$ARG_TYPE_COMMAND"; else ARG_TYPE="$ARG_TYPE_POSITIONAL"; fi
-            if $is_continous; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; dots=; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
+            if $is_continous; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; ellipsis=; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
             positionals+=( "$positional" "$ARG_TYPE" "$ARG_OCCURANCE" )
             index_of "$positional" positionals io
             positional=
