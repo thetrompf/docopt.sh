@@ -6,9 +6,10 @@ source ./parse-programs.sh
 
 function run-test {
     local test_file snaphot_file snaphot USAGE test_result \
-          output1 output2 output3 output4 output5 output6 output7 error \
+          output1 output2 output3 output4 output5 output6 output7 \
+          error
 
-    local -i
+    local -i status
     test_file=$1
 
     USAGE="$(cat "$test_file")"
@@ -32,14 +33,17 @@ function run-test {
 
     printf -v output1 '%s\n\n' "$USAGE"
 
-    parse-options "$USAGE" option_shorts option_longs option_arguments option_defaults 2>&1 | error=$(cat)
-    parse-programs "$USAGE" valid_programs positional_arguments option_shorts option_longs option_arguments option_defaults 2>&1 | error=$(cat)
+    parse-options "$USAGE" 'option_shorts' 'option_longs' 'option_arguments' 'option_defaults' 'error'
+    status=$?
 
-    # printf '%s\n' "$error" >&2
+    if test $status -eq 0; then
+        parse-programs "$USAGE" 'valid_programs' 'positional_arguments' 'option_shorts' 'option_longs' 'option_arguments' 'option_defaults' 'error'
+        status=$?
+    fi
 
-    if test -z "$error"; then
+    if test $status -eq 0; then
         printf -v output2 'PROGRAMS TABLE\n\n'
-        output3="$(print-programs-table valid_programs option_shorts option_longs option_arguments option_defaults 2>&1)"
+        output3="$(print-programs-table 'valid_programs' 'option_shorts' 'option_longs' 'option_arguments' 'option_defaults' 'error' 2>&1)"
 
         if test "${#positional_arguments}" -eq 0; then
             output4=
@@ -57,7 +61,7 @@ function run-test {
             output7="$(print-options-table option_shorts option_longs option_arguments option_defaults 2>&1)"
         fi
     else
-        printf -v output2 '%s' "$error"
+        printf -v output2 'ERROR: %s' "$error"
     fi
 
     printf -v test_result '--' '%s%s%s%s%s%s%s' "$output1" "$output2" "$output3" \

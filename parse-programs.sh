@@ -209,7 +209,8 @@ function parse-programs {
              shorts \
              longs \
              arguments \
-             defaults
+             defaults \
+             err
 
     local    USAGE line char \
              short long argument option positional arg ellipsis program_name \
@@ -220,13 +221,14 @@ function parse-programs {
              exit_code=0 \
              ARG_NECESSITY ARG_TYPE ARG_OCCURANCE
 
-    USAGE=$1
-    programs=$2
-    positionals=$3
-    shorts=$4
-    longs=$5
-    arguments=$6
-    defaults=$7
+    USAGE=$1 \
+    programs=$2 \
+    positionals=$3 \
+    shorts=$4 \
+    longs=$5 \
+    arguments=$6 \
+    defaults=$7 \
+    err=$8
 
     function assign-positional {
         if [[ "$positional" =~ ^(\<[a-z0-9_-]+\>|[A-Z0-9_-]+)$ ]]; then ARG_TYPE="$ARG_TYPE_POSITIONAL"; else ARG_TYPE="$ARG_TYPE_COMMAND"; fi
@@ -286,9 +288,9 @@ function parse-programs {
         # [--option=ARG ]
 
         if ! test -z "${arguments[$io]}" && [[ "${arguments[$io]}" != "$arg" ]]; then
-            printf 'Argument: %s should match %s in option %s %s\n' "$arg" "${arguments[$io]}" "${longs[$io]}" "${shorts[$io]}" >&2
+            printf -v err 'Argument: %s should match %s in option %s %s' "$arg" "${arguments[$io]}" "${longs[$io]}" "${shorts[$io]}"
             exit_code=1
-            return 1
+            return 0
         fi
 
         arguments[$io]="$arg"
@@ -315,6 +317,8 @@ function parse-programs {
         i=-1 io=-1 pos=0
 
         while IFS= read -r -n1 char; do
+            if ! test $exit_code -eq 0; then break 2; fi
+
             i=$((i + 1))
             if test -z "$char"; then continue; fi
 
@@ -437,9 +441,10 @@ function parse-programs {
             if [[ "$char" == "=" ]]; then
                 if $is_option && ! test -z "$option"; then
                     if $is_short; then
-                        printf 'Equal sign between option and argument is only allowed for long options.\n' >&2
+                        # shellcheck disable=SC2034
+                        printf -v err 'Equal sign between option and argument is only allowed for long options'
                         exit_code=1
-                        break 2
+                        continue
                     fi
                     assign-option
                 fi
