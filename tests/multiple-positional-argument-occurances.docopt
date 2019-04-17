@@ -1,0 +1,5 @@
+Usage:
+    program <file>
+    program <file> <file>
+    program FILE
+    program FILE FILE

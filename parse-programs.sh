@@ -209,23 +209,94 @@ function parse-programs {
              shorts \
              longs \
              arguments \
-             defaults
+             defaults \
+             err
 
     local    USAGE line char \
              short long argument option positional arg ellipsis program_name \
              is_option=false is_short=false is_argument=false \
              parse_program=false is_program_name=false \
              is_optional=false is_continous=false \
-             i=-1 io=-1 pos=0 cond_pos=0 \
+             i=-1 io=-1 pos=0 \
+             exit_code=0 \
              ARG_NECESSITY ARG_TYPE ARG_OCCURANCE
 
-    USAGE=$1
-    programs=$2
-    positionals=$3
-    shorts=$4
-    longs=$5
-    arguments=$6
-    defaults=$7
+    USAGE=$1 \
+    programs=$2 \
+    positionals=$3 \
+    shorts=$4 \
+    longs=$5 \
+    arguments=$6 \
+    defaults=$7 \
+    err=$8
+
+    function assign-positional {
+        if [[ "$positional" =~ ^(\<[a-z0-9_-]+\>|[A-Z0-9_-]+)$ ]]; then ARG_TYPE="$ARG_TYPE_POSITIONAL"; else ARG_TYPE="$ARG_TYPE_COMMAND"; fi
+        if $is_continous || [[ "$ellipsis" == '...' ]]; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
+        index_of "$positional" positionals io
+        if test $io -eq -1; then
+            positionals+=( "$positional" "$ARG_TYPE" "$ARG_OCCURANCE" )
+            index_of "$positional" positionals io
+        else
+            positionals[io+2]="$ARG_OCCURANCE_CONTINOUS"
+        fi
+        positional=
+        if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
+        programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE" "$((io / 3))" "$ARG_OCCURANCE" )
+        pos=$((pos + 1))
+    }
+
+    function assign-option {
+        # [-o ]
+        # [--option ]
+        # [--option=]
+        if $is_short; then
+            index_of "$option" shorts io
+            if test $io -eq -1; then
+                shorts+=( "$option" )
+                longs+=( "" )
+                arguments+=( "" )
+                defaults+=( "" )
+                index_of "$option" shorts io
+            else
+                is_argument=true
+            fi
+        else
+            index_of "$option" longs io
+            if test $io -eq -1; then
+                shorts+=( "" )
+                longs+=( "$option" )
+                arguments+=( "" )
+                defaults+=( "" )
+                index_of "$option" longs io
+            else
+                is_argument=true
+            fi
+        fi
+
+        # shellcheck disable=SC1007
+        option= # reset option variable
+        if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
+        programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
+        pos=$((pos + 1))
+    }
+
+    function assign-argument {
+        # [-o ARG ]
+        # [-o=ARG ]
+        # [--option ARG ]
+        # [--option=ARG ]
+
+        if ! test -z "${arguments[$io]}" && [[ "${arguments[$io]}" != "$arg" ]]; then
+            printf -v err 'Argument: %s should match %s in option %s %s' "$arg" "${arguments[$io]}" "${longs[$io]}" "${shorts[$io]}"
+            exit_code=1
+            return 0
+        fi
+
+        arguments[$io]="$arg"
+        # shellcheck disable=SC1007
+        arg= # reset arg variable
+    }
 
     while IFS= read -r line; do
         if $parse_program || grep -qi 'usage' <<< "$line"; then
@@ -243,9 +314,11 @@ function parse-programs {
         short= long= argument= option= positional= arg= ellipsis= program_name= \
         is_option=false is_short=false is_continous=false \
         is_argument=false is_program_name=false \
-        i=-1 io=-1 pos=0 cond_pos=0
+        i=-1 io=-1 pos=0
 
         while IFS= read -r -n1 char; do
+            if ! test $exit_code -eq 0; then break 2; fi
+
             i=$((i + 1))
             if test -z "$char"; then continue; fi
 
@@ -253,6 +326,7 @@ function parse-programs {
             debug_line_printf "$line" 'arg          = %s\n' "$arg"
             debug_line_printf "$line" 'ellipsis     = %s\n' "$ellipsis"
             debug_line_printf "$line" 'option       = %s\n' "$option"
+            debug_line_printf "$line" 'positional   = %s\n' "$positional"
             debug_line_printf "$line" 'is_argument  = %s\n' "$is_argument"
             debug_line_printf "$line" 'is_continous = %s\n' "$is_continous"
             debug_line_printf "$line" 'is_option    = %s\n' "$is_option"
@@ -280,71 +354,15 @@ function parse-programs {
 
             if [[ "$char" == "]" ]]; then
                 if ! test -z "$arg"; then
-                    # [-o ARG ]
-                    # [-o=ARG ]
-                    # [--option ARG ]
-                    # [--option=ARG ]
-
-                    if ! test -z "${arguments[$io]}" && [[ "${arguments[$io]}" != "$arg" ]]; then
-                        printf 'Argument: %s should match %s in option %s %s\n' "$arg" "${arguments[$io]}" "${longs[$io]}" "${shorts[$io]}" >&2
-                        return 1
-                    fi
-
-                    arguments[$io]="$arg"
-                    # shellcheck disable=SC1007
-                    arg= # reset arg variable
+                    assign-argument
                 fi
 
                 if ! test -z "$option"; then
-                    # [-o ]
-                    # [--option ]
-                    if $is_short; then
-                        # [-o ]
-                        index_of "$option" shorts io
-                        if test $io -eq -1; then
-                            shorts+=( "$option" )
-                            longs+=( "" )
-                            arguments+=( "" )
-                            defaults+=( "" )
-                            index_of "$option" shorts io
-                        else
-                            if ! test -z "${arguments[$i]}"; then
-                                is_argument=true
-                            fi
-                        fi
-
-                    else
-                        # [--option ]
-                        index_of "$option" longs io
-                        if test $io -eq -1; then
-                            shorts+=( "" )
-                            longs+=( "$option" )
-                            arguments+=( "" )
-                            defaults+=( "" )
-                            index_of "$option" longs io
-                        else
-                            if ! test -z "${arguments[$i]}"; then
-                                is_argument=true
-                            fi
-                        fi
-                    fi
-
-                    # shellcheck disable=SC1007
-                    option= # reset option variable
-                    if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-                    programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
-                    pos=$((pos + 1))
+                    assign-option
                 fi
 
                 if ! test -z "$positional"; then
-                    if [[ "$positional" =~ [a-z] ]]; then ARG_TYPE="$ARG_TYPE_COMMAND"; else ARG_TYPE="$ARG_TYPE_POSITIONAL"; fi
-                    if $is_continous; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
-                    positionals+=( "$positional" "$ARG_TYPE" "$ARG_OCCURANCE" )
-                    index_of "$positional" positionals io
-                    positional=
-                    if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-                    programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE" "$io" "$ARG_OCCURANCE" )
-                    pos=$((pos + 1))
+                    assign-positional
                 fi
 
                 is_optional=false
@@ -370,71 +388,15 @@ function parse-programs {
                 is_argument=false
 
                 if ! test -z "$arg"; then
-                    # [-o ARG ]
-                    # [-o=ARG ]
-                    # [--option ARG ]
-                    # [--option=ARG ]
-
-                    if ! test -z "${arguments[$io]}" && [[ "${arguments[$io]}" != "$arg" ]]; then
-                        printf 'Argument: %s should match %s in option %s %s\n' "$arg" "${arguments[$io]}" "${longs[$io]}" "${shorts[$io]}" >&2
-                        return 1
-                    fi
-
-                    arguments[$io]="$arg"
-                    # shellcheck disable=SC1007
-                    arg= # reset arg variable
+                    assign-argument
                 fi
 
                 if ! test -z "$option"; then
-                    # [-o ]
-                    # [--option ]
-                    if $is_short; then
-                        # [-o ]
-                        index_of "$option" shorts io
-                        if test $io -eq -1; then
-                            shorts+=( "$option" )
-                            longs+=( "" )
-                            arguments+=( "" )
-                            defaults+=( "" )
-                            index_of "$option" shorts io
-                        else
-                            if ! test -z "${arguments[$i]}"; then
-                                is_argument=true
-                            fi
-                        fi
-
-                    else
-                        # [--option ]
-                        index_of "$option" longs io
-                        if test $io -eq -1; then
-                            shorts+=( "" )
-                            longs+=( "$option" )
-                            arguments+=( "" )
-                            defaults+=( "" )
-                            index_of "$option" longs io
-                        else
-                            if ! test -z "${arguments[$i]}"; then
-                                is_argument=true
-                            fi
-                        fi
-                    fi
-
-                    # shellcheck disable=SC1007
-                    option= # reset option variable
-                    if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-                    programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
-                    pos=$((pos + 1))
+                    assign-option
                 fi
 
                 if ! test -z "$positional"; then
-                    if [[ "$positional" =~ [a-z] ]]; then ARG_TYPE="$ARG_TYPE_COMMAND"; else ARG_TYPE="$ARG_TYPE_POSITIONAL"; fi
-                    if $is_continous || test "$ellipsis" -eq '...'; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
-                    positionals+=( "$positional" "$ARG_TYPE" "$ARG_OCCURANCE" )
-                    index_of "$positional" positionals io
-                    positional=
-                    if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-                    programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE" "$io" "$ARG_OCCURANCE" )
-                    pos=$((pos + 1))
+                    assign-positional
                 fi
 
                 is_option=false
@@ -478,37 +440,15 @@ function parse-programs {
 
             if [[ "$char" == "=" ]]; then
                 if $is_option && ! test -z "$option"; then
-                    # [-o=]
-                    # [--option=]
                     if $is_short; then
-                        index_of "$option" shorts io
-                        if test $io -eq -1; then
-                            shorts+=( "$option" )
-                            longs+=( "" )
-                            arguments+=( "" )
-                            defaults+=( "" )
-                            index_of "$option" shorts io
-                        fi
-                        is_argument=true
-                    else
-                        index_of "$option" longs io
-                        if test $io -eq -1; then
-                            shorts+=( "" )
-                            longs+=( "$option" )
-                            arguments+=( "" )
-                            defaults+=( "" )
-                            index_of "$option" longs io
-                        fi
-                        is_argument=true
+                        # shellcheck disable=SC2034
+                        printf -v err 'Equal sign between option and argument is only allowed for long options'
+                        exit_code=1
+                        continue
                     fi
-
-                    # shellcheck disable=SC1007
-                    option= # reset option variable
-                    if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-                    programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
-                    pos=$((pos + 1))
-
+                    assign-option
                 fi
+
 
                 if test -z "$arg"; then
                     # if no agument has been found for current option
@@ -539,53 +479,15 @@ function parse-programs {
         done <<< "$line"
 
         if $is_option && ! test -z "$option"; then
-            # [-o=]
-            # [--option=]
-            if $is_short; then
-                index_of "$option" shorts io
-                if test $io -eq -1; then
-                    shorts+=( "$option" )
-                    longs+=( "" )
-                    arguments+=( "" )
-                    defaults+=( "" )
-                    index_of "$option" shorts io
-                fi
-            else
-                index_of "$option" longs io
-                if test $io -eq -1; then
-                    shorts+=( "" )
-                    longs+=( "$option" )
-                    arguments+=( "" )
-                    defaults+=( "" )
-                    index_of "$option" longs io
-                fi
-            fi
-
-            # shellcheck disable=SC1007
-            option= # reset option variable
-            if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-            programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE_OPTION" "$io" "$ARG_OCCURANCE_ONCE" )
-            pos=$((pos + 1))
+            assign-option
         fi
 
         if $is_argument && ! test -z "$arg"; then
-            if ! test -z "${arguments[$io]}" && [[ "${arguments[$io]}" != "$arg" ]]; then
-                printf 'Argument: %s should match %s in option %s %s\n' "$arg" "${arguments[$io]}" "${longs[$io]}" "${shorts[$io]}" >&2
-                return 1
-            fi
-            arguments[$io]="$arg"
-            arg=
+            assign-argument
         fi
 
         if ! test -z "$positional"; then
-            if [[ "$positional" =~ [a-z] ]]; then ARG_TYPE="$ARG_TYPE_COMMAND"; else ARG_TYPE="$ARG_TYPE_POSITIONAL"; fi
-            if $is_continous; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; ellipsis=; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
-            positionals+=( "$positional" "$ARG_TYPE" "$ARG_OCCURANCE" )
-            index_of "$positional" positionals io
-            positional=
-            if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-            programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE" "$io" "$ARG_OCCURANCE" )
-            pos=$((pos + 1))
+            assign-positional
         fi
 
         if ! test -z "$program_name"; then
@@ -593,4 +495,6 @@ function parse-programs {
         fi
 
     done <<< "$USAGE"
+
+    return $exit_code
 }

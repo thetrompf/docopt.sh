@@ -50,7 +50,7 @@ function print-options-table {
 }
 
 function parse-options {
-    local -n shorts longs arguments defaults
+    local -n shorts longs arguments defaults err
 
     # $option   the current option e.g. [-o, --option] name that is beign built.
     # $argument the current argument
@@ -62,11 +62,14 @@ function parse-options {
           is_description=false is_default=false \
           i=-1
 
+    local -i exit_code=0
+
     USAGE=$1
     shorts=$2
     longs=$3
     arguments=$4
     defaults=$5
+    err=$6
 
     while IFS= read -r line; do
         if test -z "$line"; then continue; fi
@@ -81,6 +84,8 @@ function parse-options {
             i=-1
 
             while IFS= read -r -n1 char; do
+                if ! test $exit_code -eq 0; then break 2; fi
+
                 i=$((i + 1))
                 if test -z "$char"; then continue; fi
 
@@ -175,8 +180,10 @@ function parse-options {
                         # [--option=ARG ]
 
                         if ! test -z "$argument" && [[ "$argument" != "$arg" ]]; then
-                            printf 'Argument: %s should match %s in option %s\n' "$arg" "$argument" "$long" >&2
-                            return 1
+                            # shellcheck disable=SC2034
+                            printf -v err 'Argument: %s should match %s in option %s %s' "$arg" "$argument" "$long" "$short"
+                            exit_code=1
+                            continue
                         fi
 
                         argument="$arg"
@@ -311,4 +318,6 @@ function parse-options {
             defaults+=( "$default" )
         fi
     done <<< "$USAGE"
+
+    return $exit_code
 }
