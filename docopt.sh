@@ -37,19 +37,13 @@ valid_programs=()
 # shellcheck disable=SC2034
 positional_arguments=()
 # shellcheck disable=SC2034
-option_shorts=()
-# shellcheck disable=SC2034
-option_longs=()
-# shellcheck disable=SC2034
-option_arguments=()
-# shellcheck disable=SC2034
-option_defaults=()
+options=()
 
-parse-options "$USAGE" option_shorts option_longs option_arguments option_defaults
-parse-programs "$USAGE" valid_programs positional_arguments option_shorts option_longs option_arguments option_defaults
+parse-options "$USAGE" options
+parse-programs "$USAGE" 'valid_programs' 'positional_arguments' 'options'
 
 printf '\n%s\n\n\nPROGRAMS TABLE\n' "$USAGE"
-print-programs-table valid_programs option_shorts option_longs option_arguments option_defaults
+print-programs-table 'valid_programs' 'options'
 
 printf '\n\nOPTIONS TABLE\n\n'
-print-options-table option_shorts option_longs option_arguments option_defaults
+print-options-table 'options'

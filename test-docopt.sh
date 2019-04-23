@@ -70,9 +70,7 @@ function run-test {
     if [[ "$snaphot" != "$test_result" ]]; then
         printf ' failed!\n\nTest: %s did not match snapshot\n\n' "$test_file" >&2
         printf '%s' "$output1"
-        diff -Naurd --label='' <(printf '%s' "$snaphot") --label='' <(printf '%s' "$test_result") >&2
-        # printf 'Expected:\n%s\n\n' "$snaphot"
-        # printf 'Got:\n%s\n' "$test_result"
+        diff -Naurd --label='snapshot' <(printf '%s' "$snaphot") --label='test-result' <(printf '%s' "$test_result") >&2
         exit 1
     else
         printf ' pass.\n'
@@ -84,7 +82,7 @@ function run-tests {
         run-test "$1"
     else
         local t
-        for t in tests/*.docopt; do
+        for t in tests/docopt/*.docopt; do
             run-test "$t"
         done
     fi

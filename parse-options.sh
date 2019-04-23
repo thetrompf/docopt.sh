@@ -4,8 +4,9 @@
 source ./util.sh
 
 function print-options-table {
-    local -n shorts longs arguments defaults
-    shorts=$1 longs=$2 arguments=$3 defaults=$4
+    local -n _options
+    # shorts=$1 longs=$2 arguments=$3 defaults=$4
+    _options=$1
 
     local header_idx='IDX' \
           header_short='SHORT' \
@@ -50,7 +51,7 @@ function print-options-table {
 }
 
 function parse-options {
-    local -n shorts longs arguments defaults err
+    local -n _options err
 
     # $option   the current option e.g. [-o, --option] name that is beign built.
     # $argument the current argument
@@ -65,11 +66,8 @@ function parse-options {
     local -i exit_code=0
 
     USAGE=$1
-    shorts=$2
-    longs=$3
-    arguments=$4
-    defaults=$5
-    err=$6
+    _options=$2
+    err=$3
 
     while IFS= read -r line; do
         if test -z "$line"; then continue; fi
@@ -312,10 +310,7 @@ function parse-options {
 
             done <<< "$line"
 
-            shorts+=( "$short" )
-            longs+=( "$long" )
-            arguments+=( "$argument" )
-            defaults+=( "$default" )
+            _options+=( "$short" "$long" "$argument" "$default" )
         fi
     done <<< "$USAGE"
 
