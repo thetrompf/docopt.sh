@@ -70,13 +70,13 @@ function print-programs-table {
     local -p i=0 j=-1 pi=0 programs_count=0 p
     programs_count=${#programs[@]}
     for (( i=0; i<programs_count; i++ )); do
-        p="${programs[$i]}"
+        p="${programs[i]}"
         j=$((j + 1))
         if test "$i" -eq 0 || ! ((j % 5)); then
             j=0
             if [[ "$p" == "EOP" ]]; then
                 i=$((i + 1))
-                p="${programs[$i]}"
+                p="${programs[i]}"
                 if test -z "$p"; then
                     continue
                 fi
@@ -89,7 +89,7 @@ function print-programs-table {
             printf -- "| % ${max_position}s " "$p"
             i=$((i + 1))
             j=$((j + 1))
-            p="${programs[$i]}"
+            p="${programs[i]}"
         fi
         if ! test -z "$p" && ! ((j % 1)); then
             case "$p" in
@@ -100,7 +100,7 @@ function print-programs-table {
             printf -- "| % ${max_necessity}s " "$p"
             i=$((i + 1))
             j=$((j + 1))
-            p="${programs[$i]}"
+            p="${programs[i]}"
         fi
         if ! test -z "$p" && ! ((j % 2)); then
             case "$p" in
@@ -112,12 +112,12 @@ function print-programs-table {
             printf -- "| % ${max_type}s " "$p"
             i=$((i + 1))
             j=$((j + 1))
-            p="${programs[$i]}"
+            p="${programs[i]}"
         fi
         if ! test -z "$p" && ! ((j % 3)); then
             printf -- "| % ${max_index}s " "$p"
             i=$((i + 1));j=$((j + 1))
-            p="${programs[$i]}"
+            p="${programs[i]}"
         fi
         if ! test -z "$p" && ! ((j % 4)); then
             case "$p" in
@@ -195,6 +195,12 @@ function print-positional-arguments-table {
 }
 
 function parse-programs {
+    # shellcheck disable=SC2154
+    if ! declare -p options 2> /dev/null | grep -q 'declare \-a'; then
+        printf 'The "options" variable must be declared as an array before invoking parse-programs\n' >&2
+        return 1
+    fi
+
     local    ARG_NECESSITY_REQUIRED=1 \
              ARG_NECESSITY_OPTIONAL=2 \
              ARG_TYPE_OPTION=3 \
@@ -204,12 +210,13 @@ function parse-programs {
              ARG_OCCURANCE_CONTINOUS=7 \
              END_OF_PROGRAM="EOP"
 
+    local    POS_SHORT=0 \
+             POS_LONG=1 \
+             POS_ARGUMENT=2 \
+             POS_DEFAULT=3
+
     local -n programs \
              positionals \
-             shorts \
-             longs \
-             arguments \
-             defaults \
              err
 
     local    USAGE line char \
@@ -224,25 +231,21 @@ function parse-programs {
     USAGE=$1 \
     programs=$2 \
     positionals=$3 \
-    shorts=$4 \
-    longs=$5 \
-    arguments=$6 \
-    defaults=$7 \
-    err=$8
+    err=$4
 
     function assign-positional {
         if [[ "$positional" =~ ^(\<[a-z0-9_-]+\>|[A-Z0-9_-]+)$ ]]; then ARG_TYPE="$ARG_TYPE_POSITIONAL"; else ARG_TYPE="$ARG_TYPE_COMMAND"; fi
         if $is_continous || [[ "$ellipsis" == '...' ]]; then ARG_OCCURANCE="$ARG_OCCURANCE_CONTINOUS"; is_continous=false; else ARG_OCCURANCE="$ARG_OCCURANCE_ONCE"; fi
-        index_of "$positional" positionals io
+        index_of "$positional" positionals io 0 3
         if test $io -eq -1; then
             positionals+=( "$positional" "$ARG_TYPE" "$ARG_OCCURANCE" )
-            index_of "$positional" positionals io
+            index_of "$positional" positionals io 0 3
         else
-            positionals[io+2]="$ARG_OCCURANCE_CONTINOUS"
+            positionals[(io * 3) + 2]="$ARG_OCCURANCE_CONTINOUS"
         fi
         positional=
         if $is_optional; then ARG_NECESSITY="$ARG_NECESSITY_OPTIONAL"; else ARG_NECESSITY="$ARG_NECESSITY_REQUIRED"; fi
-        programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE" "$((io / 3))" "$ARG_OCCURANCE" )
+        programs+=( "$pos" "$ARG_NECESSITY" "$ARG_TYPE" "$io" "$ARG_OCCURANCE" )
         pos=$((pos + 1))
     }
 
@@ -251,24 +254,20 @@ function parse-programs {
         # [--option ]
         # [--option=]
         if $is_short; then
-            index_of "$option" shorts io
+            index_of "$option" options io $POS_SHORT 4
             if test $io -eq -1; then
-                shorts+=( "$option" )
-                longs+=( "" )
-                arguments+=( "" )
-                defaults+=( "" )
-                index_of "$option" shorts io
+                # short long arg default
+                options+=( "$option" "" "" "" )
+                index_of "$option" options io $POS_SHORT 4
             else
                 is_argument=true
             fi
         else
-            index_of "$option" longs io
+            index_of "$option" options io $POS_LONG 4
             if test $io -eq -1; then
-                shorts+=( "" )
-                longs+=( "$option" )
-                arguments+=( "" )
-                defaults+=( "" )
-                index_of "$option" longs io
+                # short long arg default
+                options+=( "" "$option" "" "" )
+                index_of "$option" options io $POS_LONG 4
             else
                 is_argument=true
             fi
@@ -287,13 +286,13 @@ function parse-programs {
         # [--option ARG ]
         # [--option=ARG ]
 
-        if ! test -z "${arguments[$io]}" && [[ "${arguments[$io]}" != "$arg" ]]; then
-            printf -v err 'Argument: %s should match %s in option %s %s' "$arg" "${arguments[$io]}" "${longs[$io]}" "${shorts[$io]}"
+        if ! test -z "${options[io+POS_ARGUMENT]}" && [[ "${options[io+POS_ARGUMENT]}" != "$arg" ]]; then
+            printf -v err -- 'Argument: %s should match %s in option %s %s' "$arg" "${options[io+POS_ARGUMENT]}" "${options[io+POS_LONG]}" "${options[io+POS_SHORT]}"
             exit_code=1
             return 0
         fi
 
-        arguments[$io]="$arg"
+        options[(io * 4) + 2]="$arg"
         # shellcheck disable=SC1007
         arg= # reset arg variable
     }

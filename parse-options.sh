@@ -1,12 +1,15 @@
 #!/bin/bash -e
 
-# shellcheck disable=SC1091
-source ./util.sh
 
 function print-options-table {
-    local -n _options
-    # shorts=$1 longs=$2 arguments=$3 defaults=$4
-    _options=$1
+    # structure (short, long, argument, default)
+    if ! declare -p options 2> /dev/null | grep -q 'declare \-a'; then
+        printf 'The "options" variable must be declared as an array before invoking print-options-table\n' >&2
+        return 1
+    fi
+
+    # shellcheck disable=SC1091
+    source ./util.sh
 
     local header_idx='IDX' \
           header_short='SHORT' \
@@ -20,12 +23,20 @@ function print-options-table {
           width_argument=${#header_argument} \
           width_default=${#header_default}
 
-    local e i
-    for e in "${!longs[@]}"; do if [[ "${#e}" -gt "$width_idx" ]]; then width_idx="${#e}"; fi; done
-    for e in "${shorts[@]}"; do if [[ "${#e}" -gt "$width_short" ]]; then width_short="${#e}"; fi; done
-    for e in "${longs[@]}"; do if [[ "${#e}" -gt "$width_long" ]]; then width_long="${#e}"; fi; done
-    for e in "${arguments[@]}"; do if [[ "${#e}" -gt "$width_argument" ]]; then width_argument="${#e}"; fi; done
-    for e in "${defaults[@]}"; do if [[ "${#e}" -gt "$width_default" ]]; then width_default="${#e}"; fi; done
+    local e i=0
+    for (( i=0; i<${#options[@]}; i+=4 )); do
+        e=$(( i / 4 )); if (( ${#e} > width_idx )); then width_idx=${#e}; fi
+        e="${options[i]}"; if (( ${#e} > width_short )); then width_short=${#e}; fi
+    done
+    for (( i=1; i<${#options[@]}; i+=4 )); do
+        e="${options[i]}"; if (( ${#e} > width_long )); then width_long=${#e}; fi;
+    done
+    for (( i=2; i<${#options[@]}; i+=4 )); do
+        e="${options[i]}"; if (( ${#e} > width_argument )); then width_argument=${#e}; fi;
+    done
+    for (( i=3; i<${#options[@]}; i+=4 )); do
+        e="${options[i]}"; if (( ${#e} > width_default )); then width_default=${#e}; fi;
+    done
 
     local -a column_spec=( \
         "$header_idx"      "$width_idx" \
@@ -37,13 +48,14 @@ function print-options-table {
 
     print_table_header column_spec
 
-    for i in "${!longs[@]}"; do
-        column_spec[0]="$i"
-        column_spec[2]="${shorts[i]}"
-        column_spec[4]="${longs[i]}"
-        column_spec[6]="${arguments[i]}"
+    for (( i=0; i<${#options[@]}; i+=4 )); do
+        e=$(( i / 4 ))
+        column_spec[0]=$(( i / 4))
+        column_spec[2]="${options[i]}"
+        column_spec[4]="${options[i+1]}"
+        column_spec[6]="${options[i+2]}"
         # shellcheck disable=SC2034
-        column_spec[8]="${defaults[i]}"
+        column_spec[8]="${options[i+3]}"
         print_table_row column_spec
     done
 
@@ -51,7 +63,12 @@ function print-options-table {
 }
 
 function parse-options {
-    local -n _options err
+    if ! declare -p options 2> /dev/null | grep -q 'declare \-a'; then
+        printf 'The "options" variable must be declared as an array before invoking print-options-table\n' >&2
+        return 1
+    fi
+
+    local -n err
 
     # $option   the current option e.g. [-o, --option] name that is beign built.
     # $argument the current argument
@@ -65,9 +82,11 @@ function parse-options {
 
     local -i exit_code=0
 
+    # shellcheck disable=SC1091
+    source ./util.sh
+
     USAGE=$1
-    _options=$2
-    err=$3
+    err=$2
 
     while IFS= read -r line; do
         if test -z "$line"; then continue; fi
@@ -310,7 +329,7 @@ function parse-options {
 
             done <<< "$line"
 
-            _options+=( "$short" "$long" "$argument" "$default" )
+            options+=( "$short" "$long" "$argument" "$default" )
         fi
     done <<< "$USAGE"
 

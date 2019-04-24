@@ -2,17 +2,21 @@
 
 function index_of {
     local needle key
-    local -p i=-1
+    local -i i i2 step start
     local -n haystack ret
 
     needle=$1
     haystack=$2
     ret=$3
+    start=${4:-0}
+    step=${5:-1}
 
-    for key in "${haystack[@]}"; do
-        i=$((i + 1))
+    i2=-1
+    for (( i=start; i<${#haystack[@]}; i+=step )); do
+        i2=$(( i2 + 1 ))
+        key="${haystack[i]}"
         if [[ "$key" == "$needle" ]]; then
-            ret=$i
+            ret=$i2
             return 0
         fi
     done
