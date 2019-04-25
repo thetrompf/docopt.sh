@@ -1,6 +1,4 @@
 Usage:
     program
 
-$ program
-
 declare -A ARGS=()

@@ -1,0 +1,5 @@
+Usage:
+    program -v...
+
+Options:
+    -v --verbose  How verbose?

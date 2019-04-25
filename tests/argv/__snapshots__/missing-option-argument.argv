@@ -1,0 +1,7 @@
+Usage:
+    program --output=FILE
+
+$ program --output
+
+Usage:
+    program --output=FILE

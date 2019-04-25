@@ -20,7 +20,7 @@ PROGRAMS TABLE
 |   3 |   1 | req | pos |   1 |  once |
 +-----+-----+-----+-----+-----+-------+
 
-POSITIONAL ARGUMENTS TABLE
+ARGUMENTS TABLE
 
 +-----+--------+-----+-------+
 | IDX |   NAME | TYP | OCCUR |

@@ -9,7 +9,7 @@ PROGRAMS TABLE
 |   0 |   0 | opt | pos |   0 |  once |
 +-----+-----+-----+-----+-----+-------+
 
-POSITIONAL ARGUMENTS TABLE
+ARGUMENTS TABLE
 
 +-----+------------+-----+-------+
 | IDX |       NAME | TYP | OCCUR |

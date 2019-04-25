@@ -1,0 +1,4 @@
+Usage:
+    program --output=FILE
+
+$ program --output

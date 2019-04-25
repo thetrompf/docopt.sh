@@ -1,12 +1,14 @@
-#!/bin/bash -e
-
+#!/bin/bash
 # shellcheck disable=SC1091
+source ./build-args.sh
+source ./constants.sh
 source ./parse-argv.sh
+source ./parse-options.sh
+source ./parse-programs.sh
 
 function run-test {
     local test_file snapshot_file snapshot USAGE argv test_result \
-          output1 output2 output3 \
-          error
+          output error
 
     local -i status
     test_file=$1
@@ -15,7 +17,7 @@ function run-test {
     argv="$(grep -oP '^\$ \K(.+)$' < "$test_file")"
     snapshot_file="$(dirname "$test_file")/__snapshots__/$(basename "$test_file")"
 
-    printf 'Running test: %s... ' "$test_file"
+    printf 'Running test: %s...' "$test_file"
     if ! test -f "$snapshot_file"; then
         printf '\nSnapshot file not found: %s\n' "$snapshot_file" >&2
         exit 1
@@ -24,27 +26,49 @@ function run-test {
     snapshot="$(cat "$snapshot_file")"
 
     # shellcheck disable=SC2034
-    local -a programs=()
+    local -a programs=() \
+             options=() \
+             arguments=()
 
-    parse-argv 'programs'
+    printf -v test_result '%s\n\n$ %s\n\n' "$USAGE" "$argv"
+
+    parse-options "$USAGE" 'error'
     status=$?
 
-    printf -v output1 -- '%s\n\n' "$USAGE"
-    printf -v output2 -- '$ %s' "$argv"
-
-    if test "$status" -eq 0; then
-        printf -v output3 -- ''
+    if test $status -eq 0; then
+        parse-programs "$USAGE" 'error'
+        status=$?
     else
-        printf -v output3 -- 'ERROR: %s' "$error"
+        printf -v test_result '%sERROR: %s' "$test_result" "$error"
     fi
 
-    printf -v test_result -- '%s%s%s' "$output1" "$output2" "$output3"
+    if test $status -eq 0; then
+        output="$(build-args 2>&1)"
+        status=$?
+        if test $status -eq 0; then
+            $output
+        else
+            printf -v test_result '%sERROR: %s' "$output" "$error"
+        fi
+    else
+        printf -v test_result '%sERROR: %s' "$test_result" "$error"
+    fi
+
+    output=$(parse-argv "$USAGE" "$argv" 2>&1)
+    status=$?
+
+    if test $status -eq 0; then
+        output="$(print-args 2>&1)"
+        printf -v test_result '%s%s' "$test_result" "$output"
+    else
+        printf -v test_result '%s%s' "$test_result" "$output"
+    fi
 
     if [[ "$snapshot" != "$test_result" ]]; then
         printf ' failed!\n\nTest: %s did not match snapshot\n\n' "$test_file" >&2
-        printf '%s' "$output1"
+        printf '%s\n\n$ %s\n\n' "$USAGE" "$argv" >&2
         diff -Naurd --label='snapshot' <(printf '%s' "$snapshot") --label='test-result' <(printf '%s' "$test_result") >&2
-        exit 1
+        printf '\n'
     else
         printf ' pass.\n'
     fi

@@ -1,0 +1,9 @@
+Usage:
+    program -s
+
+Options:
+    -s       Option [default: true]
+
+declare -A ARGS=(
+    ["-s"]=true
+)

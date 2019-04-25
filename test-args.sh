@@ -1,5 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC1091
+source ./build-args.sh
 source ./constants.sh
 source ./parse-programs.sh
 source ./parse-options.sh
@@ -35,24 +36,13 @@ function run-test {
     if test $status -eq 0; then
         parse-programs "$USAGE" 'error'
         status=$?
+    else
+        printf -v test_result '%sERROR: %s' "$test_result" "$error"
     fi
 
     if test $status -eq 0; then
-        printf -v test_result '%sPROGRAMS TABLE\n\n' "$test_result"
-        output="$(print-programs-table 'error' 2>&1)"
+        output="$(build-args 2>&1)"
         printf -v test_result '%s%s' "$test_result" "$output"
-
-        if ! test "${#arguments}" -eq 0; then
-            printf -v test_result '%s\n\nARGUMENTS TABLE\n\n' "$test_result"
-            output="$(print-arguments-table 2>&1)"
-            printf -v test_result '%s%s' "$test_result" "$output"
-        fi
-
-        if ! test "${#options[@]}" -eq 0; then
-            printf -v test_result '%s\n\nOPTIONS TABLE\n\n' "$test_result"
-            output="$(print-options-table 2>&1)"
-            printf -v test_result '%s%s' "$test_result" "$output"
-        fi
     else
         printf -v test_result '%sERROR: %s' "$test_result" "$error"
     fi
@@ -72,7 +62,7 @@ function run-tests {
         run-test "$1"
     else
         local t
-        for t in tests/docopt/*.docopt; do
+        for t in tests/args/*.args; do
             run-test "$t"
         done
     fi

@@ -1,0 +1,21 @@
+Usage:
+    program [--user=NAME]
+
+Options:
+    -u --user=NAME  The users. [default: "Brian Kejlberg"]
+
+PROGRAMS TABLE
+
++-----+-----+-----+-----+-----+-------+
+| PRG | POS | NEC | TYP | IDX | OCCUR |
++-----+-----+-----+-----+-----+-------+
+|   0 |   0 | opt | opt |   0 |  once |
++-----+-----+-----+-----+-----+-------+
+
+OPTIONS TABLE
+
++-----+-------+------+------+------------------+-------+
+| IDX | SHORT | LONG |  ARG |          DEFAULT | OCCUR |
++-----+-------+------+------+------------------+-------+
+|   0 |     u | user | NAME | "Brian Kejlberg" |  once |
++-----+-------+------+------+------------------+-------+

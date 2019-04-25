@@ -1,0 +1,6 @@
+Usage:
+    program -s
+
+declare -A ARGS=(
+    ["-s"]=false
+)

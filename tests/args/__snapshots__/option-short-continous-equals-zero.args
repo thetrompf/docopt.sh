@@ -1,0 +1,6 @@
+Usage:
+    program -v...
+
+declare -A ARGS=(
+    ["-v"]=0
+)

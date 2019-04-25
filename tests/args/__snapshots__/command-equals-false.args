@@ -1,0 +1,6 @@
+Usage:
+    program cmd
+
+declare -A ARGS=(
+    ["cmd"]=false
+)

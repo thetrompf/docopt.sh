@@ -1,0 +1,9 @@
+Usage:
+    program -v...
+
+Options:
+    -v --verbose  How verbose?
+
+declare -A ARGS=(
+    ["--verbose"]=0
+)

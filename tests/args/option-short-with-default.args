@@ -1,0 +1,5 @@
+Usage:
+    program -s
+
+Options:
+    -s       Option [default: true]

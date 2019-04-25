@@ -1,0 +1,6 @@
+Usage:
+    program FILE
+
+declare -A ARGS=(
+    ["FILE"]=
+)

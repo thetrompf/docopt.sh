@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-function index_of {
+function index-of {
     local needle key
     local -i i i2 step start
     local -n haystack ret
@@ -26,7 +26,7 @@ function index_of {
     return 0
 }
 
-function debug_line {
+function debug-line {
     if [[ "$DEBUG" == "1" ]]; then
         local line i c
         line="$1"
@@ -40,44 +40,48 @@ function debug_line {
     fi
 }
 
-function debug_line_single {
+function debug-line-single {
     local old line
     line="$1"
     if ! test -z "$DEBUG_LINE" && grep -q "$DEBUG_LINE" <<< "$line"; then
         old=$DEBUG
         DEBUG=1
-        debug_line "$@"
+        debug-line "$@"
         DEBUG=$old
     fi
 }
 
-function debug_printf {
+function debug-printf {
     if [[ "$DEBUG" == "1" ]]; then
         # shellcheck disable=SC2059
         printf "$@"
     fi
 }
 
-function debug_line_printf {
+function debug-line-printf {
     local old line
     line="$1"
     shift
     if ! test -z "$DEBUG_LINE" && grep -q "$DEBUG_LINE" <<< "$line"; then
         old=$DEBUG
         DEBUG=1
-        debug_printf "$@"
+        debug-printf "$@"
         DEBUG=$old
     fi
 }
 
-function print_table_header {
-    local work line header column width i
-    local -n _column_spec
+function print-table-header {
+    # shellcheck disable=SC2154
+    if ! declare -p column_spec 2> /dev/null | grep -q 'declare \-a'; then
+        printf 'The "column_spec" variable must be declared as an array before invoking print-table-header\n' >&2
+        return 1
+    fi
 
-    _column_spec=$1
-    for ((i = 0; i < ${#_column_spec[@]}; i += 2 )); do
-        column="${_column_spec[i]}"
-        width="${_column_spec[i+1]}"
+    local work line header column width i
+
+    for ((i = 0; i < ${#column_spec[@]}; i += 2 )); do
+        column="${column_spec[i]}"
+        width="${column_spec[i+1]}"
         # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
         printf -v work -- '%0.1s' $(eval echo "-"{0..$((width + 1))});
         line+="+$work"
@@ -91,14 +95,18 @@ function print_table_header {
     printf -- '%s+\n' "$line"
 }
 
-function print_table_row {
-    local work row column width i
-    local -n _column_spec
+function print-table-row {
+    # shellcheck disable=SC2154
+    if ! declare -p column_spec 2> /dev/null | grep -q 'declare \-a'; then
+        printf 'The "column_spec" variable must be declared as an array before invoking print-table-row\n' >&2
+        return 1
+    fi
 
-    _column_spec=$1
-    for (( i = 0; i < ${#_column_spec[@]}; i += 2 )); do
-        column="${_column_spec[i]}"
-        width="${_column_spec[i+1]}"
+    local work row column width i
+
+    for (( i = 0; i < ${#column_spec[@]}; i += 2 )); do
+        column="${column_spec[i]}"
+        width="${column_spec[i+1]}"
         # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
         printf -v work -- "| % ${width}s " "$column"
         row+="$work"
@@ -107,13 +115,16 @@ function print_table_row {
     printf -- '%s|\n' "$row"
 }
 
-function print_table_hr {
-    local work line width i
-    local -n _column_spec
+function print-table-hr {
+    if ! declare -p column_spec 2> /dev/null | grep -q 'declare \-a'; then
+        printf 'The "column_spec" variable must be declared as an array before invoking print-table-hr\n' >&2
+        return 1
+    fi
 
-    _column_spec=$1
-    for ((i = 0; i < ${#_column_spec[@]}; i += 2 )); do
-        width="${_column_spec[i+1]}"
+    local work line width i
+
+    for ((i = 0; i < ${#column_spec[@]}; i += 2 )); do
+        width="${column_spec[i+1]}"
         # shellcheck disable=SC2046 disable=SC1083 disable=SC2175
         printf -v work -- '%0.1s' $(eval echo "-"{0..$((width + 1))});
         line+="+$work"

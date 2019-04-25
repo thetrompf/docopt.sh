@@ -1,0 +1,5 @@
+Usage:
+    program [--user=NAME]
+
+Options:
+    -u --user=NAME  The user to involve. [default: "Brian Kejlberg"]
